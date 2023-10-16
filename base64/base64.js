@@ -1,3 +1,4 @@
+// Version1
 class Base64 {
     base64Collection = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
 
@@ -66,7 +67,6 @@ class Base64 {
                 }
             }
         })
-        console.log(bytes)
         bytes.map(element => {
             str += String.fromCharCode((parseInt(element, 2)));
         })
@@ -75,5 +75,76 @@ class Base64 {
 
     toUnicode(utf8) {
         return utf8.slice(4, 8) + utf8.slice(10, 16) + utf8.slice(18, 24);
+    }
+}
+
+// Version2
+class Base64 {
+    base64Collection = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    encode(string) {
+        let base64Code = "";
+        const encoder = new TextEncoder();
+        const utf8 = encoder.encode(string);
+
+        for (let i = 0; i < utf8.length; i += 3) {
+            const char1 = utf8[i];
+            const char2 = utf8[i + 1];
+            const char3 = utf8[i + 2];
+
+            const byte1 = char1 >> 2;
+            const byte2 = ((char1 & 3) << 4) | (char2 >> 4);
+            const byte3 = ((char2 & 15) << 2) | (char3 >> 6);
+            const byte4 = char3 & 63;
+
+
+            base64Code += this.base64Collection.charAt(byte1) + this.base64Collection.charAt(byte2) + this.base64Collection.charAt(byte3) + this.base64Collection.charAt(byte4);
+        }
+
+        if (utf8.length % 3 === 1) {
+            base64Code = base64Code.slice(0, -2) + '==';
+        } else if (utf8.length % 3 === 2) {
+            base64Code = base64Code.slice(0, -1) + '=';
+        }
+
+        return base64Code;
+    }
+
+    decode(base64Code) {
+        let string = "";
+
+        for (let i = 0; i < base64Code.length; i += 4) {
+            const byte1 = this.base64Collection.indexOf(base64Code.charAt(i));
+            const byte2 = this.base64Collection.indexOf(base64Code.charAt(i + 1));
+            const byte3 = base64Code.charAt(i + 2) !== "=" ? this.base64Collection.indexOf(base64Code.charAt(i + 2)) : 0;
+
+            const byte4 = base64Code.charAt(i + 3) !== "=" ? this.base64Collection.indexOf(base64Code.charAt(i + 3)) : 0;
+            const char1 = (byte1 << 2) | (byte2 >> 4);
+            const char2 = ((byte2 & 15) << 4) | (byte3 >> 2);
+            const char3 = ((byte3 & 3) << 6) | byte4;
+
+            string += String.fromCharCode(char1);
+
+            if (byte3 !== 0) {
+                string += String.fromCharCode(char2);
+            }
+
+            if (byte4 !== 0) {
+                string += String.fromCharCode(char3);
+            }
+        }
+
+        return this.utf8Decode(string);
+    }
+
+    utf8Decode(utf8) {
+        const utf8Decoder = new TextDecoder('utf-8');
+        const bytes = new Uint8Array(utf8.length);
+
+        for (let i = 0; i < utf8.length; i++) {
+            bytes[i] = utf8.charCodeAt(i);
+        }
+
+        return utf8Decoder.decode(bytes);
     }
 }
